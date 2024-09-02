@@ -103,7 +103,6 @@ uint64
 sys_getancestor(void) {
   int n;
 
-  // Usar argint para asignar el argumento directamente a 'n'
   argint(0, &n);
 
   struct proc *p = myproc();
