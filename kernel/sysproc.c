@@ -99,15 +99,17 @@ sys_getppid(void){
   return p->parent ? p->parent->pid : 0; //Devuelve el PID del padre o 0 si no tiene padre
 }
 
-sys_getancestor(void){
+uint64
+sys_getancestor(void) {
   int n;
-  if (argint(0,%n)<0)
-    return -1;
+
+  // Usar argint para asignar el argumento directamente a 'n'
+  argint(0, &n);
 
   struct proc *p = myproc();
-  for (int i = 0; i < n; i++){
-    if(p-> parent == 0)
-      return -1; //no hay mas ancestros
+  for (int i = 0; i < n; i++) {
+    if (p->parent == 0)
+      return -1; // No hay más ancestros
 
     p = p->parent;
   }
