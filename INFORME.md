@@ -33,7 +33,7 @@ make qemu
 
 ## Confirmación de Funcionamiento
 - Ejecución de comandos básicos en xv6 como `ls`, `echo`, y `cat README` confirman que el sistema está funcionando correctamente.
-- 
-![cat_readme](https://github.com/user-attachments/assets/643b0fe8-7687-4c9b-8335-c8ca04ff3cb8)
-![ls_echoholaqemu](https://github.com/user-attachments/assets/a4d440d4-f3da-466e-b35d-49bd85f884ed)
-![image](https://github.com/user-attachments/assets/b8ce6c39-3c85-4e3f-ad2b-90339ac4304c)
+![image](https://github.com/user-attachments/assets/b30da7bf-9094-432d-9ca5-44750518258f)
+
+![image](https://github.com/user-attachments/assets/1b1923b2-aca9-4a03-8da0-a6bf2b106932)
+
