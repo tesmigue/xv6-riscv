@@ -1,22 +1,17 @@
-# INFORME DE INSTALACIÓN DE xv6
+# INFORME DE TAREA 1
 
-## Pasos Seguidos para la Instalación
-1.Tras buscar multiples repositorios, desde tutoriales https://github.com/johnwinans/riscv-toolchain-install-guide?tab=readme-ov-file para instalar riscv-Toolchain, https://oslab.kaist.ac.kr/xv6-tools/?ckattempt=1 o https://github.com/mit-pdos/xv6-riscv.git
-me fui por el segundo link
-2. Tras eso instale xv6-public y segui los pasos del link, instalando qemu con $ sudo apt-get install git make gcc wget qemu qemu-kvm gdb -y luego clonando el repositorio https://github.com/mit-pdos/xv6-public.git
-3. Despues de eso compile y ejecute xv6 con maek qemu-nox.
-4. Luego, lo reinicie y añadi una configuracion a "~/.gdbinit".
-5. compile con make qemu-nox-gdb para que el sistema reconozca el cambio.
-6. Por último abri una nueva instancia de ubuntu y compilé qemu con gdb ./kernel y xv6 sé instalo y compiló correctamente.
-
-## Problemas Encontrados y Soluciones
-- **Problema:** Error al compilar debido a la falta de toolchain RISC-V en el tercer link mencionado en el paso 1 .
-  **Solución:** Instalar la toolchain usando `sudo apt-get install gcc-riscv64-unknown-elf`, no funcionó la solucion. Añadi configuraciones al Makefile y al Path pero el sistema todavía no reconocía el toolchain,
-  por lo que termine optando por el segundo repositorio.
-
-## Confirmación de Funcionamiento
-- Ejecución de comandos básicos en xv6 como `ls`, `echo`, y `cat README` confirman que el sistema está funcionando correctamente.
-- 
-![cat_readme](https://github.com/user-attachments/assets/643b0fe8-7687-4c9b-8335-c8ca04ff3cb8)
-![ls_echoholaqemu](https://github.com/user-attachments/assets/a4d440d4-f3da-466e-b35d-49bd85f884ed)
-![image](https://github.com/user-attachments/assets/b8ce6c39-3c85-4e3f-ad2b-90339ac4304c)
+## Funcionamiento de las llamadas de sistema
+1. getppid(): la llamada getppid() se encarga de devolver el process ID o PID del proceso padre del proceso que la invoca. es util para que los procesos puedan identifcar su origen en la jerarquía de los procesos del sistema. getppid() se implementa en sysproc.c y la funcion accede el proceso mediante myproc() y retorna el PID de su padre, o 0 si no tiene padre
+2. getancestor(int n): la llamada al sistema getancestor(int n) devuelve el PID del ancestro del proceso según el cual esta especificado por n. Es decir, getancesto(0) retorna el proceso actual, getancestor(1) retorna el pID del padre y getancestor(2) retorna el PID del abuelo, si no existe un ancestro en ese nivel indicado, retorna -1
+## Explicacion de las modificaciones 
+- sysproc.c: implementacion de las funciones sys_getppid() y sys_getancestor()
+- syscall.h: Se añaden las llamadas al sistema de sys_getppid() y sys_getancestor
+- syscall.c: mapea ambas funciones en la tabla de llamadas al sistema
+- user.h: se declaran las funciones getppid() y getancestor(int) para que esten disponibles en el espacio del usuario
+- users.pl: se añaden entradas para agregar interfaces de usuarios
+- yosoytupadre.c: se creo el programa en la carpeta user/ que invoca las funciones para verificar su funcionamiento
+- Makeefile: se agrego el programa yosoytupadre a UPROGS para que compile junto al sistema
+## Dificultades encontradas y como se resolvieron
+- En un principio, tuve un error con sys_getancestor() ya que no habia especificado el tipo de retorno adecuado por lo que el compilador solto un error de "return type defaults to "int"", despues lo resolvi especificando el tipo de retorno uint64.
+- argint: tuve un error con el manejo del valor de argint en sys_getancestor() , realice una comparacion incorrecta con su valor de retorno, pero despues lo corregi verificando adecuadamente el valor devuelvo por argint.
+- Git: tuve que cambiar las ramas con un git pull --rebase que no me detectaba la rama correcta, despues de ingresar git pull --rebase pude realizar el git push correspondiente.
