@@ -14,6 +14,23 @@ me fui por el segundo link
   **Solución:** Instalar la toolchain usando `sudo apt-get install gcc-riscv64-unknown-elf`, no funcionó la solucion. Añadi configuraciones al Makefile y al Path pero el sistema todavía no reconocía el toolchain,
   por lo que termine optando por el segundo repositorio.
 
+Actualización(08/09/2024)
+- **Problema**: resulta que tras hablar con un compañero, me comentó que la version de xv8-public era la incorrecta a utilizar en todo el semestre
+- **Solución**: Borré todo el ubuntu que tenía y lo instalé nuevamente. Primero instalé todas las dependencias necesarias con sudo apt install -y autoconf automake autotools-dev curl libmpc-dev libmpfr-dev libgmp-dev gawk build-essential bison flex texinfo gperf libtool patchutils bc zlib1g-dev libexpat-dev, luego realicé el git clone del riscv-gnu.toolchain y configure el path para que se detecte e toolchain en todo el sistema. Realicé un sudo make y se ingreso todo al directorio principal. Luego instale qemu y una version especifica riscv64. Cloné el xv6-riscv, compilé y ejecute con make qemu, y funcionó:
+
+sudo apt install -y autoconf automake autotools-dev curl libmpc-dev libmpfr-dev libgmp-dev gawk build-essential bison flex texinfo gperf libtool patchutils bc zlib1g-dev libexpat-dev
+git clone https://github.com/riscv/riscv-gnu-toolchain
+cd riscv-gnu-toolchain
+./configure --prefix=/opt/riscv
+sudo make
+echo 'export PATH=/opt/riscv/bin:$PATH' >> ~/.bashrc
+source ~/.bashrc
+sudo apt install -y qemu qemu-system-misc
+qemu-system-riscv64 --version
+git clone https://github.com/mit-pdos/xv6-riscv.git
+cd xv6-riscv
+make qemu
+
 ## Confirmación de Funcionamiento
 - Ejecución de comandos básicos en xv6 como `ls`, `echo`, y `cat README` confirman que el sistema está funcionando correctamente.
 - 
