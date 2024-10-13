@@ -108,7 +108,6 @@ sys_getancestor(void) {
   struct proc *p = myproc();
   for (int i = 0; i < n; i++) {
     if (p->parent == 0)
-      return -1; // No hay más ancestros
 
     p = p->parent;
   }

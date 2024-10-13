@@ -7,7 +7,7 @@
 #include "kernel/syscall.h"
 #include "kernel/memlayout.h"
 #include "kernel/riscv.h"
-
+#include "user/user.h"
 //
 // Tests xv6 system calls.  usertests without arguments runs them all
 // and usertests <name> runs <name> test. The test runner creates for
@@ -3116,3 +3116,4 @@ main(int argc, char *argv[])
   printf("ALL TESTS PASSED\n");
   exit(0);
 }
+

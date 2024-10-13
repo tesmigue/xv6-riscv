@@ -140,8 +140,10 @@ UPROGS=\
 	$U/_wc\
 	$U/_zombie\
 	$U/_yosoytupadre\
-
+	$U/_prueba\
+	
 fs.img: mkfs/mkfs README $(UPROGS)
+
 	mkfs/mkfs fs.img README $(UPROGS)
 
 -include kernel/*.d user/*.d
