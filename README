@@ -1,38 +1,40 @@
-El sistema de prioridades implementado en este proyecto busca manejar de forma ordenada la ejecución de múltiples procesos dentro del sistema operativo xv6, asignando a cada proceso una prioridad que determina el orden en que serán ejecutados. La lógica de funcionamiento es la siguiente:
+Funcionaminto y lógica del sistema de prioridades
+- Cada proceso en el sistema se le asigna una prioridad( inicializada en 0) y un boost( inicializada en 1)
+- Tanto Prioridad como Boost funcionan juntos, mientras mas baja es la prioridad, mas alto será el privilegio del proceso para ejecutarse
+- Cada vez que un proceso nuevo entra al sistema, se le incrementala prioridad a todos los procesos que se pueden ejecutar:
+    *Aca se aplican las limitaciones del enunciado, ajustamos el campo de prioridad con prioridad += boost
+    *si la prioridad llega a 9, el boost cambia a -1 para reducir su prioridad
+    *Si la prioridad llega a 0, el boost vuelve al valor de 1 para aumentar la prioridad
+- Luego, el scheduler selecciona el proceso con mayor prioridad para ejecutarse, que en este caso es el proceso con un valor numérico menor), con esto  ,nos aseguramos que todos los procesos tengan una oportunidad justa de ejecucióm.
 
-Cada proceso en el sistema tiene asignado un campo de prioridad (con valor inicial 0) y un campo de boost (con valor inicial 1).
-Prioridad y boost operan juntos: mientras más baja la prioridad (números menores), más alto será el privilegio del proceso para ejecutarse.
-Cada vez que un nuevo proceso entra al sistema, se incrementa la prioridad de todos los procesos que pueden ejecutarse.
-Se ajusta el campo de prioridad con la fórmula prioridad += boost.
-Cuando la prioridad alcanza el valor de 9, el boost cambia a -1 para reducir prioridad.
-Cuando la prioridad llega a 0, el boost se establece en 1 para aumentar la prioridad.
-El scheduler (planificador) selecciona el proceso con mayor prioridad (valor numérico menor) para ejecutarse.
-Este sistema asegura que todos los procesos tengan una oportunidad justa de ejecución, evitando el monopolio de la CPU por procesos de prioridad fija.
 
-Explicación de las Modificaciones Realizadas
-Para implementar el sistema de prioridades, se realizaron los siguientes cambios:
 
-Estructura de Proceso (proc.h):
+MODIFICACIONES REALIZadas
 
-Se agregaron los campos prioridad y boost en la estructura del proceso para gestionar la prioridad de cada proceso.
-Asignación de Prioridad y Boost (proc.c):
+1. Se modifico proc.h, que es la estructura de proceso, añadiendo los casos de prioridad y boost ( int prioridad, int proceso)
+2. En proc.c se inicializo prioridad en 0 y boost en 1 cuando se crea un proceso, esto se añadio en la funcion de allocproc
+3. Luego en el mismo archivo, se añadio una logica en scheduler para ajustar la prioridad y boost ed cada proceso, donde la logica selecciona el proceso con menor valor de prioridad para ejecutarse. Esta seleccion se implemetna buscando el proceso con la prioridad
+mas baja en cada ciclo
+4. Se creo un archivo de prueba.c que sirve para validar el funcionamiento de prioridades ejecutando 20 procesos, mostrando el orden de ejecución de esto
+5. Se añadio prueba al Makefile, especificamente a los uprogs
+6. se compiló con make qemu.
 
-En la función allocproc, se inicializan prioridad en 0 y boost en 1 al momento de crear el proceso.
-Planificador (scheduler en proc.c):
 
-En scheduler, se añadió lógica para ajustar la prioridad y boost de cada proceso.
-Se selecciona el proceso con el menor valor de prioridad para ejecutarse.
-La selección se implementa buscando el proceso con la prioridad más baja en cada ciclo.
-Archivo de Pruebas (prueba.c):
 
-Se creó un archivo de pruebas para validar el funcionamiento de las prioridades, ejecutando múltiples procesos y mostrando el orden en que se ejecutan de acuerdo a su prioridad.
-Dificultades Encontradas y Soluciones Implementadas
-Sincronización y Selección de Procesos:
-
-Uno de los desafíos fue garantizar que los procesos con mayor prioridad se ejecuten primero. Se resolvió utilizando un campo adicional de boost y asegurando que el scheduler elija el proceso con prioridad más baja (mayor prioridad de ejecución).
-Problemas de Intercalado en la Impresión:
-
-Durante las pruebas, algunos procesos imprimían mensajes de forma desordenada. Para mitigarlo, se utilizó un mecanismo de ajuste de prioridad que permite a los procesos esperar su turno adecuado en el scheduler.
-Conflictos de Branch en Git:
-
-Para restaurar archivos y ramas después de problemas con git, se realizó un reset y push desde una rama estable anterior, asegurando que los archivos modificados se integraran en la nueva rama sin conflicto.
+Dificultades:
+- hacer que los procesos se ejecuten primero según su prioridad
+- los mensajes de ejecucion se imprimian de la siguiente manera:
+    EjecutaEnjdeo cpruotcanedsoo pr Eoj4ec
+    cesutoEa jec5nu
+    dtoa npdroo pceroscoe Esjeoc6 u
+    tando pE7rjo
+    ecutcandoEej sepcruoo ctando p8roc
+    eesso oE 1j90e
+    cutandoEE jjprecuoecucttesoaando  np11ro
+    cdesoEoj  ep1r2o
+    cescuto E1aj3endc
+    out procaeEnsod jo preo1ce4csu
+    ota nd1Eoj ep5cr
+    ocesou tE1jec6uantan
+esto se arreglo utilizando un mecanismo de ajuste de prioridad con exit para que el sistema espere a que el hiijo termine antes de crear el siguiente proceso, inteté usar sleep pero no funcionó
+-Tuve problemas con git, pues intente realizar el commit y se borro todo el xv6, pero realicé un reset y un push desde la rama de la tarea 1 y ingrese nuevamente los archivos de manera manual, creando una rama sin conflictos
