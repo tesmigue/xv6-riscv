@@ -1,4 +1,4 @@
-Funcionaminto y lógica del sistema de prioridades
+Funcionamiento y lógica del sistema de prioridades
 - Cada proceso en el sistema se le asigna una prioridad( inicializada en 0) y un boost( inicializada en 1)
 - Tanto Prioridad como Boost funcionan juntos, mientras mas baja es la prioridad, mas alto será el privilegio del proceso para ejecutarse
 - Cada vez que un proceso nuevo entra al sistema, se le incrementala prioridad a todos los procesos que se pueden ejecutar:
