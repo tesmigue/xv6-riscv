@@ -36,5 +36,5 @@ Dificultades:
     out procaeEnsod jo preo1ce4csu
     ota nd1Eoj ep5cr
     ocesou tE1jec6uantan
-esto se arreglo utilizando un mecanismo de ajuste de prioridad con exit para que el sistema espere a que el hiijo termine antes de crear el siguiente proceso, inteté usar sleep pero no funcionó
+esto se arreglo utilizando un mecanismo de ajuste de prioridad con exit para que el sistema espere a que el hiijo termine antes de crear el siguiente proceso
 -Tuve problemas con git, pues intente realizar el commit y se borro todo el xv6, pero realicé un reset y un push desde la rama de la tarea 1 y ingrese nuevamente los archivos de manera manual, creando una rama sin conflictos
