@@ -10,13 +10,15 @@ int main() {
             exit(1);
         }
         if (pid == 0) {
-            // Proceso hijo: imprime y duerme un momento
+            // Proceso hijo
             printf("Ejecutando proceso %d\n", i);
-            exit(0);   // Salida del proceso hijo
-        } else {
-            // Espera a que el hijo termine antes de crear el siguiente proceso
-            wait(0);
+            
+            exit(0); // Salida del proceso hijo
+            sleep(1);
         }
+        // Espera en el proceso padre a que el hijo termine
+        wait(0);
+        
     }
 
     printf("Todos los procesos hijos han terminado.\n");
