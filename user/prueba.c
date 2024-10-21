@@ -12,9 +12,9 @@ int main() {
         if (pid == 0) {
             // Proceso hijo
             printf("Ejecutando proceso %d\n", i);
-            
-            exit(0); // Salida del proceso hijo
             sleep(1);
+            exit(0); // Salida del proceso hijo
+            
         }
         // Espera en el proceso padre a que el hijo termine
         wait(0);
