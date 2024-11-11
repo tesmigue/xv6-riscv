@@ -3,8 +3,8 @@
 #include "user/user.h"
 
 int main() {
-    // Paso 1: Reservar una página de memoria
-    char *addr = sbrk(4096);  // Reservar 4096 bytes (una página)
+    // Paso 1: Reserva una página de memoria
+    char *addr = sbrk(4096);  // Reserva 4096 bytes (una página)
     if (addr == (char *)-1) {
         printf("Error al reservar memoria\n");
         exit(1);
@@ -12,7 +12,7 @@ int main() {
 
     printf("Dirección de la página reservada: %p\n", addr);
 
-    // Paso 2: Proteger la página usando mprotect
+    // Paso 2: Protege la página usando mprotect
     if (mprotect(addr, 1) == -1) {
         printf("Error: mprotect falló\n");
         exit(1);

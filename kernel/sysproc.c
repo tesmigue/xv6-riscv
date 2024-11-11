@@ -117,7 +117,7 @@ sys_getancestor(void) {
 extern int set_priority(int pid, int priority);
 extern int set_boost(int pid, int boost);
 
-// Declaraciones de mprotect y munprotect
+// Declaramos las funciones de mprotect y munprotect
 int mprotect(pagetable_t pagetable, void *addr, int len);
 int munprotect(pagetable_t pagetable, void *addr, int len);
 
@@ -126,7 +126,7 @@ uint64 sys_mprotect(void) {
     int len;
 
     // Llama a argaddr y argint sin verificar un valor de retorno.
-    // En xv6, se asume que si algo sale mal con estos, habrá un efecto visible en la ejecución.
+    //  se asume que si algo sale mal con estos, habrá un efecto visible en la ejecución por como esta seteado xv6.
     argaddr(0, (uint64*)&addr);
     argint(1, &len);
 

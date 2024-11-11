@@ -457,7 +457,7 @@ int mprotect(pagetable_t pagetable, void *addr, int len) {
         pte_t *pte = walk(pagetable, a, 0);
         if (pte == 0 || (*pte & PTE_V) == 0)
             return -1;  // Dirección inválida o no mapeada
-        *pte &= ~PTE_W;  // Desactivar el bit de escritura
+        *pte &= ~PTE_W;  // Desactiva el bit de escritura
     }
     return 0;
 }
@@ -470,7 +470,7 @@ int munprotect(pagetable_t pagetable, void *addr, int len) {
         pte_t *pte = walk(pagetable, a, 0);
         if (pte == 0 || (*pte & PTE_V) == 0)
             return -1;  // Dirección inválida o no mapeada
-        *pte |= PTE_W;  // Activar el bit de escritura
+        *pte |= PTE_W;  // Activa el bit de escritura
     }
     return 0;
 }
