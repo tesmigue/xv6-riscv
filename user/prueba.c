@@ -2,25 +2,32 @@
 #include "kernel/stat.h"
 #include "user/user.h"
 
-int main() {
-    for (int i = 1; i <= 20; i++) {
-        int pid = fork();
-        if (pid < 0) {
-            printf("Error: no se pudo crear el proceso %d\n", i);
-            exit(1);
-        }
-        if (pid == 0) {
-            // Proceso hijo
-            printf("Ejecutando proceso %d\n", i);
-            sleep(1);
-            exit(0); // Salida del proceso hijo
-            
-        }
-        // Espera en el proceso padre a que el hijo termine
-        wait(0);
-        
-    }
+int
+main(void)
+{
+  int i;
+  
+  // Crear 20 procesos
+  for(i = 0; i < 20; i++) {
+    int pid = fork();
+    if(pid == 0) {
+      // Hacer que el proceso se detenga unos segundos
+      sleep(i);  // Para que los procesos no impriman todos al mismo tiempo
 
-    printf("Todos los procesos hijos han terminado.\n");
-    exit(0);
+      // Este es el código que ejecutarán los procesos hijos.
+      printf("Ejecutando proceso con PID: %d\n", getpid());
+
+      sleep(10);  // Dormir por 10 ticks después de imprimir
+
+      exit(0);  // Salir del proceso hijo
+    }
+  }
+
+  // Esperar a que todos los procesos hijos terminen
+  for(i = 0; i < 20; i++) {
+    wait(0);
+  }
+
+  // Finalizar el programa de prueba
+  exit(0);
 }

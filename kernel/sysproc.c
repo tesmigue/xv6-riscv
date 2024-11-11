@@ -113,3 +113,39 @@ sys_getancestor(void) {
   }
   return p->pid;
 }
+
+extern int set_priority(int pid, int priority);
+extern int set_boost(int pid, int boost);
+
+// Declaraciones de mprotect y munprotect
+int mprotect(pagetable_t pagetable, void *addr, int len);
+int munprotect(pagetable_t pagetable, void *addr, int len);
+
+uint64 sys_mprotect(void) {
+    uint64 addr;
+    int len;
+
+    // Llama a argaddr y argint sin verificar un valor de retorno.
+    // En xv6, se asume que si algo sale mal con estos, habrá un efecto visible en la ejecución.
+    argaddr(0, (uint64*)&addr);
+    argint(1, &len);
+
+    // Validación manual: si addr o len no son válidos, retorna -1.
+    if (addr == 0 || len <= 0)
+        return -1;
+
+    return mprotect(myproc()->pagetable, (void *)addr, len);
+}
+
+uint64 sys_munprotect(void) {
+    uint64 addr;
+    int len;
+
+    argaddr(0, (uint64*)&addr);
+    argint(1, &len);
+
+    if (addr == 0 || len <= 0)
+        return -1;
+
+    return munprotect(myproc()->pagetable, (void *)addr, len);
+}

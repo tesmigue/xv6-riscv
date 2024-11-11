@@ -86,7 +86,7 @@ struct proc {
   struct spinlock lock;
 
 
-  int prioridad; //Nivel de prioridad que inicizaliza en 0
+  int priority; //Nivel de prioridad que inicizaliza en 0
   int boost; // valor del boost que inicializa en 1
 
   
@@ -110,3 +110,16 @@ struct proc {
   struct inode *cwd;           // Current directory
   char name[16];               // Process name (debugging)
 };
+
+// Estructura para la tabla de procesos con un spinlock y un array de procesos.
+struct ptable_struct {
+    struct spinlock lock; // Lock para proteger el acceso a la tabla.
+    struct proc proc[NPROC]; // Array de procesos.
+};
+
+// Declaración externa de la tabla de procesos.
+extern struct ptable_struct ptable;
+
+// Prototipos de funciones para establecer prioridad y boost de un proceso.
+int set_priority(int pid, int priority);
+int set_boost(int pid, int boost);

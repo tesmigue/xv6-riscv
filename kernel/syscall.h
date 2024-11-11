@@ -22,3 +22,7 @@
 #define SYS_close  21
 #define SYS_getppid 22  
 #define SYS_getancestor 23
+#define SYS_setpriority 24
+#define SYS_setboost 25
+#define SYS_mprotect 26
+#define SYS_munprotect 27
