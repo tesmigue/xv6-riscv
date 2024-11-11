@@ -7,6 +7,16 @@ munprotect: Funciona de manera opuesta a mprotect. Al recibir los parámetros ad
 
 Al implementar estas funciones, el sistema lanza una excepción de falta de página si un proceso intenta escribir en una página protegida por mprotect. proporcionando así un mecanismo efectivo de protección de memoria.
 
+Para compilar, utilizar el archivo protection.c, make clean, make qemu, protection:
+
+xv6 kernel is booting
+
+hart 1 starting
+hart 2 starting
+
+ainit: starting sh
+$ protection
+
 2. Explicación de las Modificaciones Realizadas
 Para implementar mprotect y munprotect en xv6, realizamos los siguientes cambios en el código fuente:
 
