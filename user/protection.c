@@ -22,7 +22,7 @@ int main() {
 
 
     //comentar esto para probar el programa no provoque una  falla
-    // Paso 3: Intentar escribir en la página protegida (debería fallar)
+    // Paso 3: Intenta escribir en la página protegida (debería fallar)
     printf("Intentando escribir en la página protegida...\n");
     *addr = 'X';  // Esto debería provocar un fallo de protección de memoria
 
@@ -42,7 +42,7 @@ int main() {
     *addr = 'Y';  // Esto debería ser exitoso si munprotect funcionó
     printf("Escritura en la página desprotegida exitosa, valor en la dirección: %c\n", *addr);
 
-    // Finalizar el programa
+    // Finalizacion el programa
     printf("Prueba de mprotect y munprotect completada.\n");
     exit(0);
 }

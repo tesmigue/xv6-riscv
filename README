@@ -1,40 +1,38 @@
-Funcionamiento y lógica del sistema de prioridades
-- Cada proceso en el sistema se le asigna una prioridad( inicializada en 0) y un boost( inicializada en 1)
-- Tanto Prioridad como Boost funcionan juntos, mientras mas baja es la prioridad, mas alto será el privilegio del proceso para ejecutarse
-- Cada vez que un proceso nuevo entra al sistema, se le incrementala prioridad a todos los procesos que se pueden ejecutar:
-    *Aca se aplican las limitaciones del enunciado, ajustamos el campo de prioridad con prioridad += boost
-    *si la prioridad llega a 9, el boost cambia a -1 para reducir su prioridad
-    *Si la prioridad llega a 0, el boost vuelve al valor de 1 para aumentar la prioridad
-- Luego, el scheduler selecciona el proceso con mayor prioridad para ejecutarse, que en este caso es el proceso con un valor numérico menor), con esto  ,nos aseguramos que todos los procesos tengan una oportunidad justa de ejecucióm.
+1. Funcionamiento y Lógica de la Protección de Memoria
+La implementación de mprotect y munprotect permite al sistema operativo xv6 controlar los permisos de escritura en páginas específicas de la memoria de un proceso. La lógica de protección de memoria se basa en modificar el bit de escritura (W) en la tabla de páginas (PTE) de cada página involucrada.
+
+mprotect: Cambia el bit W de las entradas de la tabla de páginas (PTE) para las páginas especificadas a solo lectura. Esto se logra al recibir una dirección de inicio (addr) y un tamaño en páginas (len). La función convierte addr a la dirección de inicio de página más cercana y calcula el número de páginas necesarias, recorriendo la tabla de páginas y desactivando el bit de escritura en cada PTE afectado.
+
+munprotect: Similar a mprotect, esta función restaura el permiso de escritura para las páginas afectadas. Recibe los mismos parámetros (addr y len), calcula las páginas necesarias y recorre la tabla de páginas, pero en lugar de desactivar el bit W, lo activa para permitir la escritura.
+
+Al implementar estas funciones, el sistema genera una excepción de fallo de página si un proceso intenta escribir en una página protegida por mprotect, proporcionando así un mecanismo efectivo de protección de memoria.
+
+2. Explicación de las Modificaciones Realizadas
+Para implementar mprotect y munprotect en xv6, realizamos los siguientes cambios en el código fuente:
+
+Creación de las Funciones mprotect y munprotect:
+
+Se implementaron las funciones mprotect y munprotect en el archivo vm.c, que es responsable de la gestión de memoria en xv6.
+Ambas funciones recorren las páginas en el rango especificado por addr y len y modifican el bit W de cada PTE. mprotect desactiva este bit, y munprotect lo vuelve a activar.
+Definición de Nuevos Syscalls:
+
+Se agregaron las llamadas al sistema sys_mprotect y sys_munprotect en sysproc.c para que los procesos puedan acceder a estas funciones.
+Se declararon en syscall.h y user.h para que los programas de usuario puedan utilizar mprotect y munprotect directamente.
+Validación de Errores:
+
+Se agregaron validaciones para asegurar que los parámetros addr y len sean válidos. Si addr es 0 o len es menor o igual a 0, las funciones devuelven -1 para indicar un error.
+Además, se agregaron validaciones adicionales para asegurarse de que las direcciones están dentro del espacio de direcciones del proceso, evitando cambios en regiones de memoria no válidas.
 
 
+3. Dificultades Encontradas y Soluciones Implementadas
+Error en el Manejo de argaddr y argint:
+Inicialmente, intentamos evaluar las funciones argaddr y argint en condiciones if para verificar errores, pero descubrimos que estas funciones son void, por lo que no se pueden comparar directamente con un valor.
+Solución: En lugar de comparar sus valores de retorno, simplemente llamamos a argaddr y argint y verificamos los valores de las variables asignadas después de la llamada.
+Validación de Direcciones de Memoria:
 
-MODIFICACIONES REALIZadas
+Verificar que la dirección addr y el rango de direcciones len pertenecen al proceso fue un desafío, ya que xv6 maneja su propio sistema de direcciones virtuales.
+Solución: Utilizamos validaciones adicionales en mprotect y munprotect para asegurarnos de que las direcciones caen dentro del espacio de usuario (MAXVA) y están correctamente alineadas en páginas.
+Pruebas y Comprobación de Fallos de Página:
 
-1. Se modifico proc.h, que es la estructura de proceso, añadiendo los casos de prioridad y boost ( int prioridad, int proceso)
-2. En proc.c se inicializo prioridad en 0 y boost en 1 cuando se crea un proceso, esto se añadio en la funcion de allocproc
-3. Luego en el mismo archivo, se añadio una logica en scheduler para ajustar la prioridad y boost ed cada proceso, donde la logica selecciona el proceso con menor valor de prioridad para ejecutarse. Esta seleccion se implemetna buscando el proceso con la prioridad
-mas baja en cada ciclo
-4. Se creo un archivo de prueba.c que sirve para validar el funcionamiento de prioridades ejecutando 20 procesos, mostrando el orden de ejecución de esto
-5. Se añadio prueba al Makefile, especificamente a los uprogs
-6. se compiló con make qemu.
-
-
-
-Dificultades:
-- hacer que los procesos se ejecuten primero según su prioridad
-- los mensajes de ejecucion se imprimian de la siguiente manera:
-    EjecutaEnjdeo cpruotcanedsoo pr Eoj4ec
-    cesutoEa jec5nu
-    dtoa npdroo pceroscoe Esjeoc6 u
-    tando pE7rjo
-    ecutcandoEej sepcruoo ctando p8roc
-    eesso oE 1j90e
-    cutandoEE jjprecuoecucttesoaando  np11ro
-    cdesoEoj  ep1r2o
-    cescuto E1aj3endc
-    out procaeEnsod jo preo1ce4csu
-    ota nd1Eoj ep5cr
-    ocesou tE1jec6uantan
-esto se arreglo utilizando un mecanismo de ajuste de prioridad con exit para que el sistema espere a que el hiijo termine antes de crear el siguiente proceso
--Tuve problemas con git, pues intente realizar el commit y se borro todo el xv6, pero realicé un reset y un push desde la rama de la tarea 1 y ingrese nuevamente los archivos de manera manual, creando una rama sin conflictos
+Durante las pruebas, necesitábamos provocar un fallo de página para verificar que mprotect estaba funcionando correctamente, lo que podía hacer que el programa se detuviera prematuramente.
+Solución: Comentamos temporalmente la parte de la prueba que provoca el fallo de página para poder verificar munprotect y asegurar que las funciones trabajen en conjunto como se esperaba.
