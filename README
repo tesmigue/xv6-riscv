@@ -1,38 +1,36 @@
 1. Funcionamiento y Lógica de la Protección de Memoria
-La implementación de mprotect y munprotect permite al sistema operativo xv6 controlar los permisos de escritura en páginas específicas de la memoria de un proceso. La lógica de protección de memoria se basa en modificar el bit de escritura (W) en la tabla de páginas (PTE) de cada página involucrada.
+El uso de mprotect y munprotect permite que el sistema operativo xv6 controle los permisos de escritura de páginas específicas de la memoria del proceso. La lógica detrás de la protección de la memoria se basa en cambiar el bit de permiso de escritura (W) en la entrada de la tabla de páginas (PTE) de cada página en el conjunto de trabajo.
 
-mprotect: Cambia el bit W de las entradas de la tabla de páginas (PTE) para las páginas especificadas a solo lectura. Esto se logra al recibir una dirección de inicio (addr) y un tamaño en páginas (len). La función convierte addr a la dirección de inicio de página más cercana y calcula el número de páginas necesarias, recorriendo la tabla de páginas y desactivando el bit de escritura en cada PTE afectado.
+mprotect: Esto convierte el permiso de escritura W en la entrada de la tabla de páginas PTE para las páginas especificadas en solo lectura. Esto se logra a través de una dirección donde el rango en páginas es la longitud. La función traduce addr en la dirección del inicio de la página más cercana que es addr y calcula el número de páginas necesarias y escanea la tabla de páginas configurando el bit W en cada PTE contactada.
 
-munprotect: Similar a mprotect, esta función restaura el permiso de escritura para las páginas afectadas. Recibe los mismos parámetros (addr y len), calcula las páginas necesarias y recorre la tabla de páginas, pero en lugar de desactivar el bit W, lo activa para permitir la escritura.
+munprotect: Funciona de manera opuesta a mprotect. Al recibir los parámetros addr y len, esta función también elimina la inhibición de escritura para las páginas afectadas. Recibe los mismos parámetros (addr y len), calcula las páginas necesarias. Escanea las tablas de páginas pero en lugar de apagar el bit W, lo vuelve a activar para permitir la escritura en las páginas.
 
-Al implementar estas funciones, el sistema genera una excepción de fallo de página si un proceso intenta escribir en una página protegida por mprotect, proporcionando así un mecanismo efectivo de protección de memoria.
+Al implementar estas funciones, el sistema lanza una excepción de falta de página si un proceso intenta escribir en una página protegida por mprotect. proporcionando así un mecanismo efectivo de protección de memoria.
 
 2. Explicación de las Modificaciones Realizadas
 Para implementar mprotect y munprotect en xv6, realizamos los siguientes cambios en el código fuente:
 
 Creación de las Funciones mprotect y munprotect:
+Las funciones mprotect y munprotect fueron implementadas en el archivo vm.c el cual se encarga de la memoria en xv6.
+Ambas funciones recorren las páginas en el rango especificado por addr y len y modifican el bit W de cada PTE. Este bit es desactivado por mprotect y a su vez munprotect lo vuelve a activar.
 
-Se implementaron las funciones mprotect y munprotect en el archivo vm.c, que es responsable de la gestión de memoria en xv6.
-Ambas funciones recorren las páginas en el rango especificado por addr y len y modifican el bit W de cada PTE. mprotect desactiva este bit, y munprotect lo vuelve a activar.
 Definición de Nuevos Syscalls:
+Se implementaron las publicaciones de los sistemas sys_mprotect y sys_munprotect en sysproc.c para el uso de esto en los procesos.
+Del mismo modo, se declararon en syscall.h y user.h a fin de que los programas de usuario puedan hacer uso de mprotect y munprotect directamente.
 
-Se agregaron las llamadas al sistema sys_mprotect y sys_munprotect en sysproc.c para que los procesos puedan acceder a estas funciones.
-Se declararon en syscall.h y user.h para que los programas de usuario puedan utilizar mprotect y munprotect directamente.
-Validación de Errores:
-
-Se agregaron validaciones para asegurar que los parámetros addr y len sean válidos. Si addr es 0 o len es menor o igual a 0, las funciones devuelven -1 para indicar un error.
-Además, se agregaron validaciones adicionales para asegurarse de que las direcciones están dentro del espacio de direcciones del proceso, evitando cambios en regiones de memoria no válidas.
-
+Justificación de Los Errores:
+Del mismo modo, se realizaron validaciones en espacio para que los parámetros addr y len sean válidos. Si addr es 0 o len es menor o igual a 0, las funciones devuelven -1 indicando error.
+Adicionalmente, se le añadieron validaciones para asegurarse que las direcciones sean bloques de dirección dentro del proceso, haciendo que no se realicen cambios en regiones de memoria inválida.
 
 3. Dificultades Encontradas y Soluciones Implementadas
-Error en el Manejo de argaddr y argint:
-Inicialmente, intentamos evaluar las funciones argaddr y argint en condiciones if para verificar errores, pero descubrimos que estas funciones son void, por lo que no se pueden comparar directamente con un valor.
-Solución: En lugar de comparar sus valores de retorno, simplemente llamamos a argaddr y argint y verificamos los valores de las variables asignadas después de la llamada.
-Validación de Direcciones de Memoria:
+Error en el manejo de Argaddr y Argint:
+Al principio intentamos analizar las funciones argaddr y argint en declaraciones if para comprobar si había errores, pero en ese momento descubrimos que esas funciones son void y no se pueden comparar con un valor.
+Solución: En lugar de comparar sus valores de retorno, simplemente llamamos estáticamente a argaddr y argint y verificamos los valores de las variables asignadas después de la llamada.
 
-Verificar que la dirección addr y el rango de direcciones len pertenecen al proceso fue un desafío, ya que xv6 maneja su propio sistema de direcciones virtuales.
-Solución: Utilizamos validaciones adicionales en mprotect y munprotect para asegurarnos de que las direcciones caen dentro del espacio de usuario (MAXVA) y están correctamente alineadas en páginas.
-Pruebas y Comprobación de Fallos de Página:
+Validación de direcciones de memoria:
+Admitir que los parámetros de dirección addr y len pertenecen al proceso fue un problema ya que xv6 tiene su propia gestión del espacio de direcciones virtuales.
+Solución: Realizamos validaciones estrictas en mprotect y munprotect para asegurarnos de que las direcciones están dentro del espacio de direcciones del usuario (MAXVA) y están correctamente alineadas a página.
 
-Durante las pruebas, necesitábamos provocar un fallo de página para verificar que mprotect estaba funcionando correctamente, lo que podía hacer que el programa se detuviera prematuramente.
-Solución: Comentamos temporalmente la parte de la prueba que provoca el fallo de página para poder verificar munprotect y asegurar que las funciones trabajen en conjunto como se esperaba.
+Pruebas y verificación de fallos de página:
+En el proceso de prueba fue necesario crear un fallo de página para asegurarnos de que mprotect estaba funcionando, lo que arriesga la posibilidad de que el programa termine antes de tiempo, lo cual no debería suceder.
+Solución: Comentamos temporalmente la fase de prueba que provoca el fallo de página para poder probar munprotect y asegurarnos de que las funciones trabajen en conjunto como deberían.
