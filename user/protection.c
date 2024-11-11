@@ -3,8 +3,8 @@
 #include "user/user.h"
 
 int main() {
-    // Paso 1: Reservar una página de memoria
-    char *addr = sbrk(4096);  // Reservar 4096 bytes (una página)
+    // Paso 1: Reserva una página de memoria
+    char *addr = sbrk(4096);  // Reserva 4096 bytes (una página)
     if (addr == (char *)-1) {
         printf("Error al reservar memoria\n");
         exit(1);
@@ -12,7 +12,7 @@ int main() {
 
     printf("Dirección de la página reservada: %p\n", addr);
 
-    // Paso 2: Proteger la página usando mprotect
+    // Paso 2: Protege la página usando mprotect
     if (mprotect(addr, 1) == -1) {
         printf("Error: mprotect falló\n");
         exit(1);
@@ -22,7 +22,7 @@ int main() {
 
 
     //comentar esto para probar el programa no provoque una  falla
-    // Paso 3: Intentar escribir en la página protegida (debería fallar)
+    // Paso 3: Intenta escribir en la página protegida (debería fallar)
     printf("Intentando escribir en la página protegida...\n");
     *addr = 'X';  // Esto debería provocar un fallo de protección de memoria
 
@@ -42,7 +42,7 @@ int main() {
     *addr = 'Y';  // Esto debería ser exitoso si munprotect funcionó
     printf("Escritura en la página desprotegida exitosa, valor en la dirección: %c\n", *addr);
 
-    // Finalizar el programa
+    // Finalizacion el programa
     printf("Prueba de mprotect y munprotect completada.\n");
     exit(0);
 }
