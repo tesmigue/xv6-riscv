@@ -1,38 +1,169 @@
-1. Funcionamiento y Lógica de la Protección de Memoria
-La implementación de mprotect y munprotect permite al sistema operativo xv6 controlar los permisos de escritura en páginas específicas de la memoria de un proceso. La lógica de protección de memoria se basa en modificar el bit de escritura (W) en la tabla de páginas (PTE) de cada página involucrada.
+Funcionamiento y Lógica
+El sistema de permisos en xv6 se basa en agregar un nuevo campo a la estructura del inode para manejar los permisos. Este campo define si el archivo es de solo lectura, lectura/escritura, o inmutable. La lógica para validar los permisos se implementa en las operaciones de archivo, como apertura, lectura y escritura.
 
-mprotect: Cambia el bit W de las entradas de la tabla de páginas (PTE) para las páginas especificadas a solo lectura. Esto se logra al recibir una dirección de inicio (addr) y un tamaño en páginas (len). La función convierte addr a la dirección de inicio de página más cercana y calcula el número de páginas necesarias, recorriendo la tabla de páginas y desactivando el bit de escritura en cada PTE afectado.
+Permisos del archivo (inode):
 
-munprotect: Similar a mprotect, esta función restaura el permiso de escritura para las páginas afectadas. Recibe los mismos parámetros (addr y len), calcula las páginas necesarias y recorre la tabla de páginas, pero en lugar de desactivar el bit W, lo activa para permitir la escritura.
+0: Sin permisos de lectura ni escritura.
+1: Solo lectura.
+2: Solo escritura.
+3: Lectura y escritura (valor predeterminado al crear un archivo).
+5: Inmutable (solo lectura y no modificable).
+Nueva llamada al sistema:
 
-Al implementar estas funciones, el sistema genera una excepción de fallo de página si un proceso intenta escribir en una página protegida por mprotect, proporcionando así un mecanismo efectivo de protección de memoria.
+chmod(char* filename, int mode): Permite cambiar los permisos de un archivo. Si el archivo tiene el permiso 5 (inmutable), esta operación falla.
+Validaciones adicionales:
 
-2. Explicación de las Modificaciones Realizadas
-Para implementar mprotect y munprotect en xv6, realizamos los siguientes cambios en el código fuente:
-
-Creación de las Funciones mprotect y munprotect:
-
-Se implementaron las funciones mprotect y munprotect en el archivo vm.c, que es responsable de la gestión de memoria en xv6.
-Ambas funciones recorren las páginas en el rango especificado por addr y len y modifican el bit W de cada PTE. mprotect desactiva este bit, y munprotect lo vuelve a activar.
-Definición de Nuevos Syscalls:
-
-Se agregaron las llamadas al sistema sys_mprotect y sys_munprotect en sysproc.c para que los procesos puedan acceder a estas funciones.
-Se declararon en syscall.h y user.h para que los programas de usuario puedan utilizar mprotect y munprotect directamente.
-Validación de Errores:
-
-Se agregaron validaciones para asegurar que los parámetros addr y len sean válidos. Si addr es 0 o len es menor o igual a 0, las funciones devuelven -1 para indicar un error.
-Además, se agregaron validaciones adicionales para asegurarse de que las direcciones están dentro del espacio de direcciones del proceso, evitando cambios en regiones de memoria no válidas.
+Operaciones de escritura no están permitidas si el archivo tiene permisos de solo lectura o es inmutable.
+Operaciones de cambio de permisos no están permitidas si el archivo es inmutable.
 
 
-3. Dificultades Encontradas y Soluciones Implementadas
-Error en el Manejo de argaddr y argint:
-Inicialmente, intentamos evaluar las funciones argaddr y argint en condiciones if para verificar errores, pero descubrimos que estas funciones son void, por lo que no se pueden comparar directamente con un valor.
-Solución: En lugar de comparar sus valores de retorno, simplemente llamamos a argaddr y argint y verificamos los valores de las variables asignadas después de la llamada.
-Validación de Direcciones de Memoria:
+Modificaciones Realizadas
+Primera Parte
+Estructura de inode (kernel/fs.h):
 
-Verificar que la dirección addr y el rango de direcciones len pertenecen al proceso fue un desafío, ya que xv6 maneja su propio sistema de direcciones virtuales.
-Solución: Utilizamos validaciones adicionales en mprotect y munprotect para asegurarnos de que las direcciones caen dentro del espacio de usuario (MAXVA) y están correctamente alineadas en páginas.
-Pruebas y Comprobación de Fallos de Página:
+Se agregó el campo int permissions; a la estructura inode.
+Valor predeterminado al crear un archivo: 3 (lectura y escritura).
+Funciones de apertura, lectura y escritura (kernel/sysfile.c):
 
-Durante las pruebas, necesitábamos provocar un fallo de página para verificar que mprotect estaba funcionando correctamente, lo que podía hacer que el programa se detuviera prematuramente.
-Solución: Comentamos temporalmente la parte de la prueba que provoca el fallo de página para poder verificar munprotect y asegurar que las funciones trabajen en conjunto como se esperaba.
+Se validan los permisos al abrir un archivo con sys_open.
+Se rechazan operaciones no permitidas, como escribir en archivos de solo lectura o inmutables.
+Nueva llamada al sistema chmod:
+
+Implementada en sys_chmod (kernel/sysfile.c).
+Validación para evitar cambiar permisos de archivos marcados como inmutables.
+Definiciones en kernel/syscall.h y kernel/syscall.c:
+
+Se agregó sys_chmod como nueva llamada al sistema.
+Se añadió la función correspondiente a la tabla de llamadas al sistema.
+Segunda Parte
+Permiso especial 5 (inmutable):
+
+Un archivo con permiso 5 se considera solo lectura y no se pueden modificar sus permisos con chmod.
+Validaciones en sys_chmod:
+
+Si un archivo es inmutable, chmod devuelve un error.
+
+
+Pruebas
+Un programa en espacio de usuario (permtest.c) realiza las siguientes pruebas:
+
+Creación del archivo:
+
+Crear un archivo con permisos de lectura/escritura (O_CREATE | O_RDWR).
+Escribir datos y cerrar el archivo.
+Cambio a solo lectura:
+
+Cambiar los permisos del archivo a solo lectura (chmod(filename, 1)).
+Intentar escribir en el archivo debe fallar.
+Restaurar permisos de escritura:
+
+Cambiar los permisos del archivo a lectura/escritura (chmod(filename, 3)).
+Verificar que se pueda escribir nuevamente.
+Establecer el archivo como inmutable:
+
+Cambiar los permisos del archivo a inmutable (chmod(filename, 5)).
+Intentar escribir debe fallar.
+Intentar cambiar los permisos nuevamente debe fallar.
+
+Detalles Técnicos
+Archivos Modificados
+kernel/fs.h: Se agregó el campo de permisos en la estructura inode.
+kernel/fs.c: Inicialización del campo permissions en los inodes.
+kernel/sysfile.c:
+Validaciones de permisos en sys_open, sys_write, y sys_read.
+Implementación de sys_chmod.
+kernel/syscall.c y kernel/syscall.h: Se registró la nueva llamada al sistema.
+user/user.h y user/usys.pl: Se declaró y generó la función chmod.
+user/permtest.c: Programa de pruebas.
+
+
+README.md
+Sistema de Permisos Básicos en xv6
+Objetivo
+Implementar un sistema de permisos básicos en el sistema operativo xv6 que permita:
+
+Definir permisos de acceso a archivos para solo lectura (1), escritura (2), ambos (3), y un permiso especial de inmutabilidad (5).
+Modificar operaciones de apertura, lectura, escritura y la creación de una nueva llamada al sistema chmod.
+Funcionamiento y Lógica
+El sistema de permisos en xv6 se basa en agregar un nuevo campo a la estructura del inode para manejar los permisos. Este campo define si el archivo es de solo lectura, lectura/escritura, o inmutable. La lógica para validar los permisos se implementa en las operaciones de archivo, como apertura, lectura y escritura.
+
+Permisos del archivo (inode):
+
+0: Sin permisos de lectura ni escritura.
+1: Solo lectura.
+2: Solo escritura.
+3: Lectura y escritura (valor predeterminado al crear un archivo).
+5: Inmutable (solo lectura y no modificable).
+Nueva llamada al sistema:
+
+chmod(char* filename, int mode): Permite cambiar los permisos de un archivo. Si el archivo tiene el permiso 5 (inmutable), esta operación falla.
+Validaciones adicionales:
+
+Operaciones de escritura no están permitidas si el archivo tiene permisos de solo lectura o es inmutable.
+Operaciones de cambio de permisos no están permitidas si el archivo es inmutable.
+Modificaciones Realizadas
+Primera Parte
+Estructura de inode (kernel/fs.h):
+
+Se agregó el campo int permissions; a la estructura inode.
+Valor predeterminado al crear un archivo: 3 (lectura y escritura).
+Funciones de apertura, lectura y escritura (kernel/sysfile.c):
+
+Se validan los permisos al abrir un archivo con sys_open.
+Se rechazan operaciones no permitidas, como escribir en archivos de solo lectura o inmutables.
+Nueva llamada al sistema chmod:
+
+Implementada en sys_chmod (kernel/sysfile.c).
+Validación para evitar cambiar permisos de archivos marcados como inmutables.
+Definiciones en kernel/syscall.h y kernel/syscall.c:
+
+Se agregó sys_chmod como nueva llamada al sistema.
+Se añadió la función correspondiente a la tabla de llamadas al sistema.
+Segunda Parte
+Permiso especial 5 (inmutable):
+
+Un archivo con permiso 5 se considera solo lectura y no se pueden modificar sus permisos con chmod.
+Validaciones en sys_chmod:
+
+Si un archivo es inmutable, chmod devuelve un error.
+Pruebas
+Un programa en espacio de usuario (permtest.c) realiza las siguientes pruebas:
+
+Creación del archivo:
+
+Crear un archivo con permisos de lectura/escritura (O_CREATE | O_RDWR).
+Escribir datos y cerrar el archivo.
+Cambio a solo lectura:
+
+Cambiar los permisos del archivo a solo lectura (chmod(filename, 1)).
+Intentar escribir en el archivo debe fallar.
+Restaurar permisos de escritura:
+
+Cambiar los permisos del archivo a lectura/escritura (chmod(filename, 3)).
+Verificar que se pueda escribir nuevamente.
+Establecer el archivo como inmutable:
+
+Cambiar los permisos del archivo a inmutable (chmod(filename, 5)).
+Intentar escribir debe fallar.
+Intentar cambiar los permisos nuevamente debe fallar.
+Detalles Técnicos
+Archivos Modificados
+kernel/fs.h: Se agregó el campo de permisos en la estructura inode.
+kernel/fs.c: Inicialización del campo permissions en los inodes.
+kernel/sysfile.c:
+Validaciones de permisos en sys_open, sys_write, y sys_read.
+Implementación de sys_chmod.
+kernel/syscall.c y kernel/syscall.h: Se registró la nueva llamada al sistema.
+user/user.h y user/usys.pl: Se declaró y generó la función chmod.
+user/permtest.c: Programa de pruebas.
+Dificultades Encontradas
+Integración del nuevo campo de permisos en el inode:
+
+Solución: Ajustar las funciones de inicialización de inode para asignar el valor predeterminado 3.
+Validación de permisos en operaciones de archivo:
+
+Solución: Implementar validaciones específicas en sys_open, sys_write y sys_read.
+Errores de compilación y conflictos en definiciones:
+
+Solución: Revisar cuidadosamente las dependencias y encabezados incluidos en los archivos fuente.
+
