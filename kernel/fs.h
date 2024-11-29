@@ -1,10 +1,14 @@
 // On-disk file system format.
 // Both the kernel and user programs use this header file.
 
-
+#ifndef FS_H
+#define FS_H
 #define ROOTINO  1   // root i-number
 #define BSIZE 1024  // block size
 
+
+#include "spinlock.h"  // Si está definido
+#include "sleeplock.h" // Agrega este encabezado
 // Disk layout:
 // [ boot block | super block | log | inode blocks |
 //                                          free bit map | data blocks]
@@ -58,3 +62,18 @@ struct dirent {
   char name[DIRSIZ];
 };
 
+struct inode {
+    uint dev;
+    uint inum;
+    int ref;
+    int valid;
+    short type;
+    short major;
+    short minor;
+    short nlink;
+    uint size;
+    uint addrs[NDIRECT+1];
+    int perm; // Campo para permisos
+    struct sleeplock lock; 
+};
+#endif // FS_H

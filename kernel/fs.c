@@ -196,28 +196,22 @@ static struct inode* iget(uint dev, uint inum);
 // Returns an unlocked but allocated and referenced inode,
 // or NULL if there is no free inode.
 struct inode*
-ialloc(uint dev, short type)
-{
-  int inum;
-  struct buf *bp;
-  struct dinode *dip;
+ialloc(uint dev, short type) {
+    struct inode *ip;
 
-  for(inum = 1; inum < sb.ninodes; inum++){
-    bp = bread(dev, IBLOCK(inum, sb));
-    dip = (struct dinode*)bp->data + inum%IPB;
-    if(dip->type == 0){  // a free inode
-      memset(dip, 0, sizeof(*dip));
-      dip->type = type;
-      log_write(bp);   // mark it allocated on the disk
-      brelse(bp);
-      return iget(dev, inum);
+    for (ip = &itable.inode[0]; ip < &itable.inode[NINODE]; ip++) {
+        acquiresleep(&ip->lock);
+        if (ip->ref == 0 && ip->type == 0) { // Inodo libre
+            ip->type = type;
+            ip->perm = 3; // Permisos por defecto
+            releasesleep(&ip->lock);
+            return ip;
+        }
+        releasesleep(&ip->lock);
     }
-    brelse(bp);
-  }
-  printf("ialloc: no inodes\n");
-  return 0;
-}
 
+    return 0; // No hay inodos disponibles
+}
 // Copy a modified in-memory inode to disk.
 // Must be called after every change to an ip->xxx field
 // that lives on disk.

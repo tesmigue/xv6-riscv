@@ -5,6 +5,7 @@
 #include "memlayout.h"
 #include "spinlock.h"
 #include "proc.h"
+#include "fs.h"
 
 uint64
 sys_exit(void)
@@ -148,4 +149,34 @@ uint64 sys_munprotect(void) {
         return -1;
 
     return munprotect(myproc()->pagetable, (void *)addr, len);
+}
+
+uint64
+sys_chmod(void) {
+    char path[MAXPATH];
+    int mode;
+
+    // Usa un búfer de tamaño fijo en lugar de un puntero doble
+    if (argstr(0, path, MAXPATH) < 0 || argint(1, &mode) < 0) {
+        return -1; // Error al obtener argumentos
+    }
+
+    struct inode *ip = namei(path); // Encuentra el inodo del archivo
+    if (!ip) return -1;
+
+    begin_op();
+    ilock(ip);
+
+    if (ip->perm == 5) { // Si el archivo es inmutable
+        iunlockput(ip);
+        end_op();
+        return -1; // No se puede cambiar permisos de un archivo inmutable
+    }
+
+    ip->perm = mode; // Cambia los permisos
+    iupdate(ip);
+    iunlockput(ip);
+    end_op();
+
+    return 0; // Operación exitosa
 }

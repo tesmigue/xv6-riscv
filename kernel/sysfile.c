@@ -349,6 +349,21 @@ sys_open(void)
     return -1;
   }
 
+    if ((ip->perm & 1) == 0 && (omode & O_RDONLY)) {
+      iunlock(ip);
+      end_op();
+      return -1; // Error: no tiene permiso de lectura
+  }
+  if ((ip->perm & 2) == 0 && (omode & O_WRONLY)) {
+      iunlock(ip);
+      end_op();
+      return -1; // Error: no tiene permiso de escritura
+  }
+  if (ip->perm == 5) {
+      omode = O_RDONLY; // Archivos inmutables son solo lectura
+  }
+
+
   if(ip->type == T_DEVICE){
     f->type = FD_DEVICE;
     f->major = ip->major;
@@ -502,4 +517,6 @@ sys_pipe(void)
     return -1;
   }
   return 0;
-}
+};
+
+

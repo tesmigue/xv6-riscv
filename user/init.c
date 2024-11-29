@@ -16,10 +16,13 @@ main(void)
 {
   int pid, wpid;
 
+  // Intenta abrir la consola; si no existe, créala.
   if(open("console", O_RDWR) < 0){
     mknod("console", CONSOLE, 0);
     open("console", O_RDWR);
   }
+
+  // Duplica la consola para stdout y stderr.
   dup(0);  // stdout
   dup(0);  // stderr
 
@@ -37,17 +40,15 @@ main(void)
     }
 
     for(;;){
-      // this call to wait() returns if the shell exits,
-      // or if a parentless process exits.
+      // Este wait() regresa si el shell termina,
+      // o si un proceso sin padre termina.
       wpid = wait((int *) 0);
       if(wpid == pid){
-        // the shell exited; restart it.
+        // Si el shell salió, reinícialo.
         break;
       } else if(wpid < 0){
         printf("init: wait returned an error\n");
         exit(1);
-      } else {
-        // it was a parentless process; do nothing.
       }
     }
   }
