@@ -28,6 +28,8 @@ int mprotect(void *addr, int len);
 int munprotect(void *addr, int len);
 extern int setpriority(int pid, int priority);
 extern int setboost(int pid, int boost);
+int chmod(char *path, int mode);
+
 
 
 // ulib.c

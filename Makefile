@@ -142,6 +142,7 @@ UPROGS=\
 	$U/_yosoytupadre\
 	$U/_prueba\
 	$U/_protection\
+	$U/_permtest\
 		
 fs.img: mkfs/mkfs README $(UPROGS)
 
