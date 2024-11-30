@@ -8,38 +8,38 @@ main(void)
 {
   int fd = open("testfile", O_CREATE | O_RDWR);
   if(fd < 0){
-    printf("Failed to create file\n");
+    printf("Error: No se pudo crear el archivo\n");
     exit(1);
   }
-  write(fd, "Hello, World!", 13);
+  write(fd, "Hola, Mundo!", 13);
   close(fd);
 
   if(chmod("testfile", 1) < 0){
-    printf("Failed to change permissions\n");
+    printf("Error: No se pudo cambiar los permisos del archivo\n");
     exit(1);
   }
 
   fd = open("testfile", O_WRONLY);
   if(fd >= 0){
-    printf("Should not have been able to open file for writing\n");
+    printf("Error: No se debería haber podido abrir el archivo en modo escritura\n");
     exit(1);
   }
 
   chmod("testfile", 3); // Restore write permission
   fd = open("testfile", O_RDWR);
   if(fd < 0){
-    printf("Failed to open file with restored permissions\n");
+    printf("Error: No se pudo abrir el archivo con permisos restaurados\n");
     exit(1);
   }
-  write(fd, "Modified", 8);
+  write(fd, "Modificado", 8);
   close(fd);
 
   chmod("testfile", 5); // Set immutable
   if(chmod("testfile", 3) >= 0){
-    printf("Should not have been able to change immutable file\n");
+    printf("Error: No se debería haber podido cambiar los permisos de un archivo inmutable\n");
     exit(1);
   }
 
-  printf("All tests passed\n");
+  printf("Todas las pruebas pasaron correctamente\n");
   exit(0);
 }

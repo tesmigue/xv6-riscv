@@ -1,169 +1,69 @@
 Funcionamiento y Lógica
-El sistema de permisos en xv6 se basa en agregar un nuevo campo a la estructura del inode para manejar los permisos. Este campo define si el archivo es de solo lectura, lectura/escritura, o inmutable. La lógica para validar los permisos se implementa en las operaciones de archivo, como apertura, lectura y escritura.
+El sistema de permisos implementado busca mejorar el control sobre cómo se acceden y modifican los archivos en xv6. Este sistema desarrollado permite:
+1. Definir si un archivo es solo de lectura, solo de escritura o lectura/escritura
+2. Introducir un permiso especial para hacer un archivo inmutable, es decir, no modificable en su contenido ni en sus permisos
 
-Permisos del archivo (inode):
+Tipo de permisos(inode):
 
-0: Sin permisos de lectura ni escritura.
-1: Solo lectura.
-2: Solo escritura.
-3: Lectura y escritura (valor predeterminado al crear un archivo).
-5: Inmutable (solo lectura y no modificable).
-Nueva llamada al sistema:
+- 0: Sin permisos de lectura ni escritura.
+- 1: Solo lectura.
+- 2: Solo escritura.
+- 3: Lectura y escritura (valor predeterminado al crear un archivo).
+- 5: Inmutable (solo lectura y no modificable).
 
-chmod(char* filename, int mode): Permite cambiar los permisos de un archivo. Si el archivo tiene el permiso 5 (inmutable), esta operación falla.
-Validaciones adicionales:
+Principales cambios de funcionamiento
+* Al abrir un archivo: si uno intenta abrir un archivo en modo escritura pero este tiene permisos de solo lectura o es inmutable, el sistema devuelve un error
+* Al escribir en un archivo: si el archivo no tiene permisos de escritura, la operacion falla
+* Al cambiar permisos con chmod: Uno puede cambiar los permisos de los archivos, a menos que este sea inmutable. Por lo que si el archivo es inmutable, chmod retorna un error
 
-Operaciones de escritura no están permitidas si el archivo tiene permisos de solo lectura o es inmutable.
-Operaciones de cambio de permisos no están permitidas si el archivo es inmutable.
+Modificaciones realizadas
+1. Campo permisos en el inode( Kernel/fs.h)
+    - se añadio un campo de permissions en la estructura inode para guardar los permisos del archivo
+    - el campo inicializa con el valor de 3 ( lectura y escritura por default) al crear un archivo
 
+2. Validaciones en las operaciones de los archivos ( kernel/sysfile.c)
+- sys_open:Ahora valida que no se pueda abrir un archivo en modo escritura si los permisos del archivo no lo permiten.
+- sys_write: Verifica los permisos antes de escribir. Si el archivo no tiene permisos de escritura, devuelve un error.
+- sys_read:Se mantuvo casi sin cambios, ya que las operaciones de lectura solo requieren que el archivo tenga permisos de lectura.
 
-Modificaciones Realizadas
-Primera Parte
-Estructura de inode (kernel/fs.h):
+3. Llamada al sistema chmod(kernel/sysfile.c)
+- Implementamos sys_chmod para permitir que los usuarios cambien los permisos de un archivo.
+- El proceso:
+    * Se verifica si el archivo existe.
+    * Si el archivo es inmutable, chmod retorna un error.
+    * Si todo está bien, se actualiza el campo permissions del archivo.
 
-Se agregó el campo int permissions; a la estructura inode.
-Valor predeterminado al crear un archivo: 3 (lectura y escritura).
-Funciones de apertura, lectura y escritura (kernel/sysfile.c):
+4. Registro de la Nueva Llamada al Sistema( kernel/syscall.h y kernel/syscall.c)
+- kernel/syscall.h: Se añadió la definición de SYS_chmod.
+- kernel/syscall.c: Se registró la función sys_chmod.
 
-Se validan los permisos al abrir un archivo con sys_open.
-Se rechazan operaciones no permitidas, como escribir en archivos de solo lectura o inmutables.
-Nueva llamada al sistema chmod:
+5. Pruebas(user/permtest.c)
+Se creó un programa para validar las funcionalidades:
 
-Implementada en sys_chmod (kernel/sysfile.c).
-Validación para evitar cambiar permisos de archivos marcados como inmutables.
-Definiciones en kernel/syscall.h y kernel/syscall.c:
-
-Se agregó sys_chmod como nueva llamada al sistema.
-Se añadió la función correspondiente a la tabla de llamadas al sistema.
-Segunda Parte
-Permiso especial 5 (inmutable):
-
-Un archivo con permiso 5 se considera solo lectura y no se pueden modificar sus permisos con chmod.
-Validaciones en sys_chmod:
-
-Si un archivo es inmutable, chmod devuelve un error.
-
-
-Pruebas
-Un programa en espacio de usuario (permtest.c) realiza las siguientes pruebas:
-
-Creación del archivo:
-
-Crear un archivo con permisos de lectura/escritura (O_CREATE | O_RDWR).
-Escribir datos y cerrar el archivo.
-Cambio a solo lectura:
-
-Cambiar los permisos del archivo a solo lectura (chmod(filename, 1)).
-Intentar escribir en el archivo debe fallar.
-Restaurar permisos de escritura:
-
-Cambiar los permisos del archivo a lectura/escritura (chmod(filename, 3)).
-Verificar que se pueda escribir nuevamente.
-Establecer el archivo como inmutable:
-
-Cambiar los permisos del archivo a inmutable (chmod(filename, 5)).
-Intentar escribir debe fallar.
-Intentar cambiar los permisos nuevamente debe fallar.
-
-Detalles Técnicos
-Archivos Modificados
-kernel/fs.h: Se agregó el campo de permisos en la estructura inode.
-kernel/fs.c: Inicialización del campo permissions en los inodes.
-kernel/sysfile.c:
-Validaciones de permisos en sys_open, sys_write, y sys_read.
-Implementación de sys_chmod.
-kernel/syscall.c y kernel/syscall.h: Se registró la nueva llamada al sistema.
-user/user.h y user/usys.pl: Se declaró y generó la función chmod.
-user/permtest.c: Programa de pruebas.
+    1. Crear un archivo con permisos de lectura y escritura.
+    2. Cambiar los permisos a solo lectura y verificar que no se pueda escribir.
+    3. Cambiar los permisos de vuelta a lectura/escritura y validar que se pueda escribir de nuevo.
+    4. Cambiar permisos a inmutable y verificar que:
+        * No se puede escribir en el archivo.
+        * No se pueden modificar los permisos.
 
 
-README.md
-Sistema de Permisos Básicos en xv6
-Objetivo
-Implementar un sistema de permisos básicos en el sistema operativo xv6 que permita:
 
-Definir permisos de acceso a archivos para solo lectura (1), escritura (2), ambos (3), y un permiso especial de inmutabilidad (5).
-Modificar operaciones de apertura, lectura, escritura y la creación de una nueva llamada al sistema chmod.
-Funcionamiento y Lógica
-El sistema de permisos en xv6 se basa en agregar un nuevo campo a la estructura del inode para manejar los permisos. Este campo define si el archivo es de solo lectura, lectura/escritura, o inmutable. La lógica para validar los permisos se implementa en las operaciones de archivo, como apertura, lectura y escritura.
+Dificultades encontradas y soluciones
+1. Problema al incluir archivos de encabezado:
+- Errores en la redefinicion en estructuras como spinlock y inode
+    - Solucion: ajuste y revisada de las inclusiones duplicadas y el orden de los encabezados en los archivos fuente
 
-Permisos del archivo (inode):
+2. Compatibilidad con operaciones existentes:
+- Las funciones como sys_open y sys_write no estaban diseñadas para trabajar con permisos de archivos.
+- Solución: Se añadieron validaciones para verificar los permisos antes de realizar operaciones como abrir o escribir.
 
-0: Sin permisos de lectura ni escritura.
-1: Solo lectura.
-2: Solo escritura.
-3: Lectura y escritura (valor predeterminado al crear un archivo).
-5: Inmutable (solo lectura y no modificable).
-Nueva llamada al sistema:
+3. Error al registrar chmod en el sistema:
+- Hubo problemas iniciales para registrar correctamente la nueva llamada al sistema en la tabla de llamadas.
+- Solución: Se revisaron los archivos syscall.h, syscall.c y usys.pl para asegurarnos de que la llamada estuviera correctamente configurada.
 
-chmod(char* filename, int mode): Permite cambiar los permisos de un archivo. Si el archivo tiene el permiso 5 (inmutable), esta operación falla.
-Validaciones adicionales:
+4. Pruebas fallidas en casos límite:
+- Durante el desarrollo del programa de prueba, surgieron problemas al cambiar permisos de archivos inmutables.
+- Solución: Se ajustaron las validaciones en sys_chmod para que los archivos inmutables devuelvan correctamente un error al intentar cambiar permisos.
 
-Operaciones de escritura no están permitidas si el archivo tiene permisos de solo lectura o es inmutable.
-Operaciones de cambio de permisos no están permitidas si el archivo es inmutable.
-Modificaciones Realizadas
-Primera Parte
-Estructura de inode (kernel/fs.h):
-
-Se agregó el campo int permissions; a la estructura inode.
-Valor predeterminado al crear un archivo: 3 (lectura y escritura).
-Funciones de apertura, lectura y escritura (kernel/sysfile.c):
-
-Se validan los permisos al abrir un archivo con sys_open.
-Se rechazan operaciones no permitidas, como escribir en archivos de solo lectura o inmutables.
-Nueva llamada al sistema chmod:
-
-Implementada en sys_chmod (kernel/sysfile.c).
-Validación para evitar cambiar permisos de archivos marcados como inmutables.
-Definiciones en kernel/syscall.h y kernel/syscall.c:
-
-Se agregó sys_chmod como nueva llamada al sistema.
-Se añadió la función correspondiente a la tabla de llamadas al sistema.
-Segunda Parte
-Permiso especial 5 (inmutable):
-
-Un archivo con permiso 5 se considera solo lectura y no se pueden modificar sus permisos con chmod.
-Validaciones en sys_chmod:
-
-Si un archivo es inmutable, chmod devuelve un error.
-Pruebas
-Un programa en espacio de usuario (permtest.c) realiza las siguientes pruebas:
-
-Creación del archivo:
-
-Crear un archivo con permisos de lectura/escritura (O_CREATE | O_RDWR).
-Escribir datos y cerrar el archivo.
-Cambio a solo lectura:
-
-Cambiar los permisos del archivo a solo lectura (chmod(filename, 1)).
-Intentar escribir en el archivo debe fallar.
-Restaurar permisos de escritura:
-
-Cambiar los permisos del archivo a lectura/escritura (chmod(filename, 3)).
-Verificar que se pueda escribir nuevamente.
-Establecer el archivo como inmutable:
-
-Cambiar los permisos del archivo a inmutable (chmod(filename, 5)).
-Intentar escribir debe fallar.
-Intentar cambiar los permisos nuevamente debe fallar.
-Detalles Técnicos
-Archivos Modificados
-kernel/fs.h: Se agregó el campo de permisos en la estructura inode.
-kernel/fs.c: Inicialización del campo permissions en los inodes.
-kernel/sysfile.c:
-Validaciones de permisos en sys_open, sys_write, y sys_read.
-Implementación de sys_chmod.
-kernel/syscall.c y kernel/syscall.h: Se registró la nueva llamada al sistema.
-user/user.h y user/usys.pl: Se declaró y generó la función chmod.
-user/permtest.c: Programa de pruebas.
-Dificultades Encontradas
-Integración del nuevo campo de permisos en el inode:
-
-Solución: Ajustar las funciones de inicialización de inode para asignar el valor predeterminado 3.
-Validación de permisos en operaciones de archivo:
-
-Solución: Implementar validaciones específicas en sys_open, sys_write y sys_read.
-Errores de compilación y conflictos en definiciones:
-
-Solución: Revisar cuidadosamente las dependencias y encabezados incluidos en los archivos fuente.
-
+![alt text](image.png)
