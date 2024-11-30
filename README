@@ -66,4 +66,6 @@ Dificultades encontradas y soluciones
 - Durante el desarrollo del programa de prueba, surgieron problemas al cambiar permisos de archivos inmutables.
 - Solución: Se ajustaron las validaciones en sys_chmod para que los archivos inmutables devuelvan correctamente un error al intentar cambiar permisos.
 
+
+Adjunto imagen de prueba, en caso de que no compile
 ![alt text](image.png)
