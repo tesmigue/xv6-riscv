@@ -1,38 +1,42 @@
+ANtes de empezar, pido perdon por el funcionamiento de los sleeps del codigo, tengo un problema por una instalacion defectuosa del toolchain que no se pudo arreglar, pido perdón y si es posible una excepción
+
 1. Funcionamiento y Lógica de la Protección de Memoria
-La implementación de mprotect y munprotect permite al sistema operativo xv6 controlar los permisos de escritura en páginas específicas de la memoria de un proceso. La lógica de protección de memoria se basa en modificar el bit de escritura (W) en la tabla de páginas (PTE) de cada página involucrada.
+Se implementa un sistema basico de comunicacion entre procesos en XV6 mediante una cola de mensajes global en el kernel, los procesos pueden enviar mensajes (sys_send) o recibirlos( sys_recieve) utilizando llamadas diseñadas para respetar la sincronizacion y evitar
+los conflictos. esto permite que un proceso sender, es decir escritor, comunique datos a un proceso lector, es decir receiver, de manera ordenada y segura. Los mensajes se almacenan temporalmente en una cola dentro del kernel, garantiznado que los lectores obtengan
+los mensajes en el mismo orden en que se enviaron
 
-mprotect: Cambia el bit W de las entradas de la tabla de páginas (PTE) para las páginas especificadas a solo lectura. Esto se logra al recibir una dirección de inicio (addr) y un tamaño en páginas (len). La función convierte addr a la dirección de inicio de página más cercana y calcula el número de páginas necesarias, recorriendo la tabla de páginas y desactivando el bit de escritura en cada PTE afectado.
-
-munprotect: Similar a mprotect, esta función restaura el permiso de escritura para las páginas afectadas. Recibe los mismos parámetros (addr y len), calcula las páginas necesarias y recorre la tabla de páginas, pero en lugar de desactivar el bit W, lo activa para permitir la escritura.
-
-Al implementar estas funciones, el sistema genera una excepción de fallo de página si un proceso intenta escribir en una página protegida por mprotect, proporcionando así un mecanismo efectivo de protección de memoria.
 
 2. Explicación de las Modificaciones Realizadas
-Para implementar mprotect y munprotect en xv6, realizamos los siguientes cambios en el código fuente:
 
-Creación de las Funciones mprotect y munprotect:
+    * Estructura de Mensajes y Cola:
 
-Se implementaron las funciones mprotect y munprotect en el archivo vm.c, que es responsable de la gestión de memoria en xv6.
-Ambas funciones recorren las páginas en el rango especificado por addr y len y modifican el bit W de cada PTE. mprotect desactiva este bit, y munprotect lo vuelve a activar.
-Definición de Nuevos Syscalls:
+        - Se añadió una estructura message_t para representar los mensajes, con el contenido del mensaje y el PID del remitente.
+        - La cola de mensajes msg_queue se implementó como una estructura global con un array circular y un spinlock para sincronización.
+    * Nuevas Llamadas al Sistema:
+        -sys_send: Permite a un proceso enviar un mensaje a la cola. Si la cola está llena, el proceso bloquea el envío.
+        -sys_receive: Permite a un proceso recibir un mensaje de la cola. Si no hay mensajes, el proceso se bloquea hasta que llegue uno.
+    *Sincronización:
+        - Se utilizó un spinlock para proteger la cola de mensajes contra accesos concurrentes.
+        - Las funciones sleep y wakeup (existentes en xv6) se utilizaron para bloquear procesos cuando no hay mensajes y despertarlos cuando la cola tiene nuevos mensajes disponibles.
+    *Programa de Prueba:
+        -Se creó ipc_test.c, que genera dos procesos: un escritor (writer) que envía mensajes y un lector (reader) que los recibe y los muestra en la consola.
 
-Se agregaron las llamadas al sistema sys_mprotect y sys_munprotect en sysproc.c para que los procesos puedan acceder a estas funciones.
-Se declararon en syscall.h y user.h para que los programas de usuario puedan utilizar mprotect y munprotect directamente.
-Validación de Errores:
 
-Se agregaron validaciones para asegurar que los parámetros addr y len sean válidos. Si addr es 0 o len es menor o igual a 0, las funciones devuelven -1 para indicar un error.
-Además, se agregaron validaciones adicionales para asegurarse de que las direcciones están dentro del espacio de direcciones del proceso, evitando cambios en regiones de memoria no válidas.
+Dificultades Encontradas y Soluciones Implementadas
 
+Integración de Funciones de Bloqueo:
+    Inicialmente, los procesos no esperaban correctamente cuando la cola estaba llena o vacía debido a errores en la implementación de sleep y wakeup.
+    Solución: ajuste en la lógica para que los procesos bloqueen o despierten correctamente en estas condiciones.
 
-3. Dificultades Encontradas y Soluciones Implementadas
-Error en el Manejo de argaddr y argint:
-Inicialmente, intentamos evaluar las funciones argaddr y argint en condiciones if para verificar errores, pero descubrimos que estas funciones son void, por lo que no se pueden comparar directamente con un valor.
-Solución: En lugar de comparar sus valores de retorno, simplemente llamamos a argaddr y argint y verificamos los valores de las variables asignadas después de la llamada.
-Validación de Direcciones de Memoria:
+Problemas con el Toolchain:
+    Desde la tarea 2 que he tenido problema con los sleeps no funcionan y hoy me di cuenta que los sleeps no funcionan debido a una instalación defectuosa del toolchain. Esto impidió que el programa reflejara correctamente el tiempo de espera entre mensajes.
+    Solución: Aunque el programa funciona correctamente en términos de orden y funcionalidad, la sincronización temporal no pudo verificarse debido a esta limitación en el entorno de WSL, pido porfavor una excepción.
 
-Verificar que la dirección addr y el rango de direcciones len pertenecen al proceso fue un desafío, ya que xv6 maneja su propio sistema de direcciones virtuales.
-Solución: Utilizamos validaciones adicionales en mprotect y munprotect para asegurarnos de que las direcciones caen dentro del espacio de usuario (MAXVA) y están correctamente alineadas en páginas.
-Pruebas y Comprobación de Fallos de Página:
+Conflictos de Declaración:
+    Hubo conflictos en definiciones redundantes de estructuras y funciones al integrar las nuevas funcionalidades.
+    Solución: Se simplificó las definiciones, asegurando que todas las estructuras y funciones estuvieran correctamente incluidas en los headers correspondientes.
 
-Durante las pruebas, necesitábamos provocar un fallo de página para verificar que mprotect estaba funcionando correctamente, lo que podía hacer que el programa se detuviera prematuramente.
-Solución: Comentamos temporalmente la parte de la prueba que provoca el fallo de página para poder verificar munprotect y asegurar que las funciones trabajen en conjunto como se esperaba.
+Errores en las Llamadas al Sistema:
+
+    Al principio, send y receive no estaban correctamente enlazadas con el kernel, lo que causaba errores de referencia.
+    Solución: Se corrigieron las definiciones en los archivos syscall.c y usys.pl para garantizar que las llamadas estuvieran disponibles tanto para el kernel como para los programas de usuario.
